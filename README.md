@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Forma — Scientific Calculator & Visual Math Lab
 
 একটি সম্পূর্ণ স্থানীয় HTML/CSS/JavaScript app। কোনো dependency, backend, API key, account বা internet connection লাগে না। আগের Arithmetic, Percentage, Algebra balance animation এবং Circle calculator রাখা হয়েছে। বিভাগগুলো desktop sidebar থেকে খুলুন; mobile-এ Tools button drawer খুলবে।
@@ -245,3 +246,7 @@ Historical verification (2026-10-26): **1084 assertions passed across 19 real Ed
 - Why buttons show worked examples as a labeled purple dotted overlay without changing the user's function. Examples explain squared-distance sign, the inverse-square-root width relationship at a fixed height, and vertical translation.
 - Real roots are substituted into the original polynomial with full floating-point precision. The readout shows residual and tolerance `10⁻⁹ × max(1, |ax²| + |bx| + |c|)`; displayed roots are rounded. Unverifiable overflow scales are disclosed. Complex roots have no real-axis marker. This is a numerical check, not a symbolic proof.
 - Pointer capture/cancellation separates vertex movement from panning. Input/tool changes cancel old dragging/playback. All new controls/help are English/Bengali, the original light/dark theme remains, and reduced motion keeps manual dragging/keyboard/prediction usable without curve morphing. Browser touch emulation is tested; physical-device and full screen-reader audits are not claimed.
+=======
+# forma-math-studio
+An interactive math studio with scientific calculators, visual explanations, and 3D animations.
+>>>>>>> 963a3964b1d7618a3cd1980c811f418e62bb829a
