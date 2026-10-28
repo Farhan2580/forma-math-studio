@@ -1,0 +1,88 @@
+<!doctype html><meta charset="utf-8"><title>Forma professional workbench & lessons</title>
+<pre id="report">RUNNING</pre><iframe title="Workbench checks" src="../index.html" style="width:1280px;height:1000px;border:0"></iframe>
+<script>
+document.querySelector('iframe').onload=async()=>{
+ const frame=document.querySelector('iframe'),w=frame.contentWindow,d=w.document,$=id=>d.getElementById(id),checks=[];
+ const assert=(ok,name)=>{if(!ok)throw Error(name);checks.push(name);},near=(a,b)=>Math.abs(a-b)<1e-9,wait=ms=>new Promise(r=>setTimeout(r,ms)),click=id=>$(id).click();
+ const mode=async name=>{d.querySelector('[data-mode="'+name+'"]').click();await wait(0);};
+ const input=(id,value)=>{$(id).value=value;$(id).dispatchEvent(new w.Event('input',{bubbles:true}));};
+ const choose=(id,value)=>{$(id).value=value;$(id).dispatchEvent(new w.Event('change',{bubbles:true}));};
+ const arithmetic=(a,b,op)=>{input('a',a);input('b',b);choose('op',op);click('calculate');return w.FormaLessons.model;};
+ const percent=(p,n,kind='of')=>{input('p',p);input('n',n);choose('percent-kind',kind);click('calculate');return w.FormaLessons.model;};
+ try{
+  await wait(100);
+  assert(w.getComputedStyle($('tool-sidebar')).position==='fixed'&&$('tool-sidebar').contains(d.querySelector('nav')),'Desktop sidebar replaces top tabs');
+  assert(d.querySelectorAll('.tool-group').length===8,'Eight organized categories');
+  assert($('active-tool-title').textContent==='Arithmetic'&&!d.querySelector('.intro').getClientRects().length,'Active tool heading replaces large hero');
+  assert(parseFloat(w.getComputedStyle(d.body).fontSize)>=16&&[...d.querySelectorAll('#fields label')].every(el=>parseFloat(w.getComputedStyle(el).fontSize)>=14),'Readable body and field labels');
+  input('tool-search','inverse');assert($('tool-search-results').querySelector('button').textContent.includes('inverse'),'Search discovers a subtool');
+  $('tool-search').dispatchEvent(new w.KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));await wait(0);assert(w.FormaApp.mode==='matrix'&&$('matrix-operation').value==='inverse','Search opens the matching subtool');
+  await mode('basic');let m=arithmetic(-3,5,'+');assert(m.result===2,'Signed addition result');
+  const svg=$('lesson-svg');w.FormaLessons.player.seek(1);const x0=Number(svg.querySelector('.lesson-dot').getAttribute('cx'));w.FormaLessons.player.seek(2);const x1=Number(svg.querySelector('.lesson-dot').getAttribute('cx'));assert(x1>x0,'Adding a positive number moves right');
+  assert([...svg.querySelectorAll('text')].some(el=>el.textContent==='0'),'Number line labels the zero origin explicitly');
+  m=arithmetic(3,-5,'+');w.FormaLessons.player.seek(1);const negativeStart=Number(svg.querySelector('.lesson-dot').getAttribute('cx'));w.FormaLessons.player.seek(2);assert(Number(svg.querySelector('.lesson-dot').getAttribute('cx'))<negativeStart&&m.result===-2,'Adding a negative number moves left');
+  m=arithmetic(-3,-5,'-');w.FormaLessons.player.seek(1);const subtractStart=Number(svg.querySelector('.lesson-dot').getAttribute('cx'));w.FormaLessons.player.seek(2);assert(Number(svg.querySelector('.lesson-dot').getAttribute('cx'))>subtractStart&&m.result===2,'Subtracting a negative number moves right');
+  m=arithmetic(1.25,.5,'-');assert(m.result===.75&&$('lesson-model-note').textContent.includes('scaled'),'Decimal subtraction uses labeled scale');
+  m=arithmetic(1e100,2e100,'+');w.FormaLessons.player.seek(2);assert(near(m.result/1e100,3)&&!svg.innerHTML.includes('NaN')&&!svg.innerHTML.includes('Infinity'),'Large-number line avoids invalid coordinates');
+  arithmetic(12,4,'*');assert(d.querySelectorAll('#lesson-cells .block').length===48&&$('lesson-model-note').textContent.includes('12 equal rows'),'Multiplication shows equal rows and columns');
+  arithmetic(100,1,'*');assert(d.querySelectorAll('#lesson-cells .block').length===100,'Dense multiplication remains bounded');
+  arithmetic(-2.5,4,'*');assert($('lesson-model-note').textContent.includes('Scaled area')&&$('result').textContent==='-10','Signed decimal multiplication uses explicit schematic area');
+  assert(w.FormaLessons.model.steps[1].changed.en.includes('|a|')&&!w.FormaLessons.model.steps[1].changed.en.includes('groups'),'Signed decimal factors never invent negative or fractional group counts');
+  arithmetic(1000000,1000000,'*');assert($('meaningful-lesson').querySelectorAll('*').length<400,'Large input never creates thousands of objects');
+  m=arithmetic(17,5,'/');w.FormaLessons.player.seek(3);assert(m.quotient===3&&m.remainder===2&&$('result').textContent==='3.4','Division separates integer distribution and numeric quotient');
+  assert([...svg.querySelectorAll('.lesson-share')].filter(el=>el.style.display!=='none').length===15&&[...svg.querySelectorAll('.lesson-remainder')].filter(el=>el.style.display!=='none').length===2,'Distribution shows all shared items and leftover items');
+  arithmetic(0,5,'/');assert(w.FormaLessons.model.quotient===0&&w.FormaLessons.model.remainder===0,'Zero dividend is valid');
+  arithmetic(-7,2.5,'/');assert($('lesson-model-note').textContent.includes('Scaled quotient')&&$('result').textContent==='-2.8','Signed decimal division uses a ratio instead of fictitious recipients');
+  arithmetic(17,0,'/');assert($('b').getAttribute('aria-invalid')==='true'&&$('b-validation').textContent.includes('zero')&&$('a').value==='17'&&$('b').value==='0','Zero division error is adjacent and preserves both inputs');
+  assert($('lesson-play').disabled&&$('copy-answer').disabled,'Invalid input disables stale animation and copying');
+  arithmetic(12,4,'*');assert(!$('b').hasAttribute('aria-invalid'),'Correct input clears field error');
+  arithmetic(-3,5,'+');const currentSvg=$('lesson-svg'),oldInput=$('a'),oldResult=$('result');click('view-quick');await wait(0);assert($('a')===oldInput&&$('result')===oldResult&&$('result').textContent==='2'&&$('a').value==='-3','Quick view preserves input and result objects');
+  assert(w.getComputedStyle($('visual')).display==='none','Quick view omits the learning diagram');click('view-learn');assert($('lesson-svg')===currentSvg&&w.getComputedStyle($('visual')).display!=='none','Learn view restores the same persistent SVG');
+  w.FormaLessons.player.seek(1);click('lesson-play');await wait(300);click('lesson-play');const paused=w.FormaLessons.player.position,dot=svg.querySelector('.lesson-dot').getAttribute('cx');await wait(200);assert(paused>1&&paused<2&&w.FormaLessons.player.position===paused&&svg.querySelector('.lesson-dot').getAttribute('cx')===dot,'Pause freezes the exact in-flight state');
+  input('lesson-speed',3);assert(w.FormaLessons.player.speed===3,'Shared animation speed applies without replay');
+  click('lesson-next');assert(w.FormaLessons.player.position===Math.floor(paused)+1,'Next advances to an exact step');click('lesson-prev');assert(w.FormaLessons.player.position===Math.floor(paused),'Previous returns to an exact step');
+  click('lesson-replay');assert(w.FormaLessons.player.position===0&&$('a').value==='-3','Replay restarts first step with the same input');
+  input('a',7);assert(!w.FormaLessons.player.playing&&w.FormaLessons.player.position===0&&$('result').textContent==='12','Input change cancels old playback and resets lesson');
+  assert($('lesson-detail').querySelectorAll('dt').length===3&&$('lesson-detail').textContent.includes('Why'),'Step explains what, why and change');
+  click('lesson-next');assert($('steps').querySelectorAll('[aria-current=step]').length===1&&$('lesson-progress').value===1,'Current-step highlight and progress are synchronized');
+  const oldPlayer=w.FormaLessons.player;click('lesson-play');await mode('percentage');assert(!oldPlayer.playing,'Changing tools cancels former playback');
+  m=percent(12.5,240);assert(m.result===30&&d.querySelectorAll('#lesson-cells .selected').length===12&&near(Number(d.querySelector('#lesson-cells .partial').dataset.fill),.5),'Decimal percentage has an exact partial-cell fraction');
+  assert(m.steps.length===4&&m.steps[1].what.en.includes('/ 100')&&m.steps[2].what.en.includes('× 240'),'Percentage steps follow p%, fraction, multiplication, answer');
+  m=percent(20,100,'increase');w.FormaLessons.player.seek(3);assert(m.result===120&&m.n===100&&m.change===20&&$('lesson-svg').textContent.includes('Original: 100')&&$('lesson-svg').textContent.includes('Signed change: 20'),'Increase separates original, signed change and answer');
+  m=percent(150,100,'decrease');assert(m.result===-50&&m.change===-150,'Decrease above 100% can cross below zero');
+  m=percent(-25,200,'increase');assert(m.result===150&&$('lesson-cells').dataset.sign==='negative'&&$('lesson-model-note').textContent.includes('Negative share'),'Negative percentage keeps its sign explicitly');
+  m=percent(250,40);assert(m.result===100&&$('lesson-cells').dataset.wholes==='2'&&d.querySelectorAll('#lesson-cells .selected').length===50,'250% uses two full wholes and a half-grid');
+  percent(100,40);assert(d.querySelectorAll('#lesson-cells .selected').length===100&&$('lesson-model-note').textContent.includes('representative full whole'),'100% displays a full representative grid');
+  percent(0,40);assert(d.querySelectorAll('#lesson-cells .selected').length===0&&$('result').textContent==='0','Zero percent has an empty grid');
+  percent(1e18,1e-15);assert($('lesson-cells').style.display==='none'&&$('lesson-model-note').textContent.includes('Signed multiplier'),'Huge percentage uses a labeled multiplier instead of clipped cells');
+  const sameSvg=$('lesson-svg');percent(33.3,90);assert($('lesson-svg')===sameSvg,'Updating inputs retains diagram objects');
+  await mode('algebra');assert([...$('input-math-preview').querySelectorAll('mo')].some(el=>el.textContent==='=')&&$('input-math-preview').textContent.includes('18'),'Equation preview is refreshed for the current solver instead of retaining an old expression');
+  assert($('replay').parentElement===$('algebra-controls'),'Legacy Replay is placed inside the same shared control bar');
+  await mode('scientific');input('sci-expression','sqrt(9)+(1/3)^2');w.FormaScientific.calculate();await wait(0);
+  assert($('sci-preview').querySelector('mfrac')&&$('sci-preview').querySelector('msqrt')&&$('sci-preview').querySelector('msup'),'MathML preview formats fractions, roots and powers');
+  assert(w.FormaFeedback.results.get('scientific').ast===w.FormaNotation.parse($('sci-expression').value),'Preview and evaluation share the identical parsed AST');
+  assert($('visual-availability').textContent.includes('No visual lesson')&&!$('visual-availability').hidden,'Scientific view honestly reports missing visual lesson');
+  click('view-quick');click('view-learn');assert($('sci-expression').value==='sqrt(9)+(1/3)^2','Scientific view switch preserves expression');
+  input('sci-expression','<img src=x onerror=alert(1)>');w.FormaScientific.calculate();assert(!$('scientific').querySelector('img')&&$('sci-expression').value.includes('<img')&&$('sci-expression').getAttribute('aria-invalid')==='true','User input is never injected as preview HTML');
+  input('sci-expression','6*7');w.FormaScientific.calculate();assert(w.FormaFeedback.results.get('scientific').accuracy==='exact','Integer-only exact result is labeled conservatively');
+  let copied='';Object.defineProperty(w.navigator,'clipboard',{configurable:true,value:{writeText:async text=>{copied=text;}}});click('copy-answer');await wait(0);assert(copied==='42'&&$('copy-feedback').textContent==='Answer copied','Successful copy reports feedback');
+  Object.defineProperty(w.navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw Error('denied');}}});click('copy-answer');await wait(0);assert($('copy-feedback').textContent.includes('Copy failed'),'Failed copy reports honest feedback');
+  input('sci-expression','1/3');w.FormaScientific.calculate();assert(w.FormaFeedback.results.get('scientific').accuracy==='approximate','Repeating decimal is marked approximate');
+  for(const name of ['basic','percentage','scientific','graph','algebra','geometry','algebra-lab','geometry-lab','calculus','statistics','matrix','tools']){
+    await mode(name);click('tool-example');await wait(20);const feedback=w.FormaFeedback.results.get(name);assert(feedback&&feedback.answer&&!['invalid','unsupported'].includes(feedback.accuracy),'Working example: '+name);click('tool-reset');await wait(0);assert(!d.querySelector('[aria-invalid=true]'),'Reset clears validation: '+name);
+  }
+  await mode('geometry');assert(!$('circle-controls').hidden&&$('circle-status').textContent==='Step 1 of 3','Static circle formula steps also expose shared controls');const circleSvg=$('visual').querySelector('svg');click('circle-next');assert($('steps').children[1].getAttribute('aria-current')==='step'&&$('visual').querySelector('svg')===circleSvg,'Circle walkthrough highlights real formula steps without a fake transformation');
+  click('language-toggle');await wait(0);assert($('view-learn').textContent.includes('চিত্র')&&$('tool-example').textContent.includes('উদাহরণ'),'New interface labels translate to Bengali');
+  input('tool-search','ত্রিভুজ');$('tool-search-results').querySelector('button').click();await wait(0);assert($('geo-shape').value==='triangle','Bengali search routes to the requested shape');
+  await mode('basic');arithmetic(-3,5,'+');assert($('lesson-detail').textContent.includes('কেন করছি'),'New lesson explanations are bilingual');click('language-toggle');await wait(0);
+  for(const width of [320,390,768,1280]){
+    frame.style.width=width+'px';await wait(130);for(const name of ['basic','percentage','scientific','graph','matrix']){await mode(name);assert(d.documentElement.scrollWidth<=d.documentElement.clientWidth,'No page overflow: '+name+' at '+width+'px');}
+  }
+  frame.style.width='320px';await wait(130);assert($('tool-sidebar').inert&&$('menu-toggle').getAttribute('aria-expanded')==='false','Mobile sidebar starts collapsed and inert');
+  click('menu-toggle');assert(!$('tool-sidebar').inert&&d.activeElement===$('tool-search'),'Drawer opens with keyboard focus in search');
+  d.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));assert($('tool-sidebar').inert&&d.activeElement===$('menu-toggle'),'Escape closes drawer and restores focus');
+  click('menu-toggle');d.querySelector('[data-mode=percentage]').click();await wait(0);assert($('menu-toggle').getAttribute('aria-expanded')==='false'&&w.FormaApp.mode==='percentage','Choosing a tool closes the mobile drawer');
+  document.getElementById('report').textContent='PASS '+checks.length+' checks\n'+checks.join('\n');
+ }catch(error){document.getElementById('report').textContent='FAIL: '+error.message+'\nPassed '+checks.length+'\n'+checks.join('\n');}
+};
+</script>

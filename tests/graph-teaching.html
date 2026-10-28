@@ -1,0 +1,71 @@
+<!doctype html><meta charset="utf-8"><title>Graph teaching browser checks</title>
+<style>iframe{width:1200px;height:1100px;border:0}</style><pre id="report">RUNNING</pre><iframe src="../index.html" title="Graph teaching test"></iframe>
+<script>
+document.querySelector('iframe').onload=async function(){
+ const w=this.contentWindow,d=w.document,G=w.FormaGraph,$=id=>d.getElementById(id),checks=[];
+ const assert=(v,s)=>{if(!v)throw Error(s);checks.push(s);},near=(a,b)=>Math.abs(a-b)<1e-7,wait=ms=>new Promise(r=>setTimeout(r,ms));
+ const input=(id,v)=>{$(id).value=v;$(id).dispatchEvent(new w.Event($(id).tagName==='SELECT'?'change':'input',{bubbles:true}));};
+ const click=id=>$(id).click(),set=v=>G.setCoefficients(v,{instant:true}),coeff=()=>G.snapshot().coeff;
+ const key=(k,shiftKey=false)=>$('graph-vertex-handle').dispatchEvent(new w.KeyboardEvent('keydown',{key:k,shiftKey,bubbles:true,cancelable:true}));
+ function pointer(name,x,y,type='mouse',id=7){const e=new w.PointerEvent(name,{clientX:x,clientY:y,pointerId:id,pointerType:type,button:0,bubbles:true,cancelable:true});$('graph-vertex-handle').dispatchEvent(e);return e;}
+ function position(){const h=$('graph-vertex-handle'),p=new w.DOMPoint(+h.getAttribute('cx'),+h.getAttribute('cy')).matrixTransform($('graph-svg').getScreenCTM());return p;}
+ try{
+ d.querySelector('[data-mode="graph"]').click();await wait(150);
+ const handle=$('graph-vertex-handle');assert(handle.getAttribute('tabindex')==='0'&&handle.getAttribute('role')==='button','Keyboard accessible vertex');
+ set([2,0,0]);const bounds=G.snapshot().bounds;key('ArrowRight');assert(near(coeff()[1],-4)&&near(coeff()[2],2),'Keyboard vertex uses b=-2ah, c=ah²+k');
+ assert(coeff()[0]===2&&G.snapshot().bounds.join()===bounds.join(),'Vertex preserves a and viewport');
+ key('ArrowUp',true);assert(near(coeff()[2],2.1),'Shift arrows provide fine motion');
+ assert(near(+$('graph-b-slider').value,coeff()[1])&&near(+$('graph-c').value,coeff()[2]),'Drag model synchronizes sliders and number inputs');
+ assert($('graph-equation').textContent.includes('-4')||$('graph-equation').textContent.includes('4'),'Equation updates');
+ assert($('graph-vertex-form').textContent.includes('b = −2ah'),'Vertex-form explanation');
+ key('Home');assert(coeff().join()==='2,0,0','Home restores origin with same a');
+ let p=position();pointer('pointerdown',p.x,p.y);pointer('pointermove',p.x+20,p.y-12);pointer('pointerup',p.x+20,p.y-12);
+ let v=w.FormaMath.quadratic(...coeff()).vertex;assert(v.x>0&&v.y>0&&coeff()[0]===2,'Mouse drag moves vertex right/up preserving curvature');
+ assert(near(coeff()[1],-4*v.x)&&near(coeff()[2],2*v.x*v.x+v.y),'Mouse drag maintains vertex-form identities');
+ set([-1,0,0]);p=position();const down=pointer('pointerdown',p.x,p.y,'touch');const move=pointer('pointermove',p.x-25,p.y+10,'touch');pointer('pointerup',p.x-25,p.y+10,'touch');
+ v=w.FormaMath.quadratic(...coeff()).vertex;assert(v.x<0&&v.y<0&&coeff()[0]===-1,'Touch drag handles negative a');assert(down.defaultPrevented&&move.defaultPrevented,'Touch drag prevents accidental scroll/pan');
+ assert(G.snapshot().bounds.join()===bounds.join(),'Dragging does not pan viewport');
+ p=position();pointer('pointerdown',p.x,p.y);pointer('pointercancel',p.x,p.y);const before=coeff().join();pointer('pointermove',p.x+40,p.y);assert(coeff().join()===before,'Pointer cancellation stops drag');
+ set([20,0,0]);for(let i=0;i<30;i++)key('ArrowRight');assert(coeff().every(n=>Math.abs(n)<=20),'Vertex respects coefficient bounds');
+ assert($('graph-drag-feedback').textContent.includes('limit'),'Clamped drag is disclosed');
+ click('graph-vertex-reset');assert(coeff().join()==='20,0,0','Vertex reset preserves a');
+ set([0,2,-4]);assert(handle.style.display==='none'&&$('graph-vertex-help').textContent.includes('a=0'),'Linear function disables vertex with reason');
+ const linear=coeff().join();key('ArrowRight');assert(coeff().join()===linear,'Disabled keyboard cannot move linear vertex');
+ assert($('graph-root-checks').querySelector('[data-pass="true"]')?.dataset.root==='2','Linear root substitution');
+ set([1,0,-2]);assert($('graph-root-checks').querySelectorAll('[data-pass="true"]').length===2,'Irrational roots pass residual tolerance');
+ assert($('graph-root-checks').textContent.includes('Tolerance')&&$('graph-root-checks').textContent.includes('x²'),'Substitution and tolerance disclosed');
+ set([1,2,1]);assert($('graph-root-checks').querySelectorAll('[data-root]').length===1,'Repeated root checked once');
+ set([1,0,1]);assert($('graph-root-checks').textContent.includes('Complex'),'Complex roots have honest explanation');
+ assert([...d.querySelectorAll('.graph-root')].every(n=>n.style.display==='none'),'Complex roots never marked on real axis');
+ set([0,0,0]);assert($('graph-root-checks').textContent.includes('every real'),'Infinite-root constant explained');
+ set([0,0,4]);assert($('graph-root-checks').textContent.includes('no roots'),'Nonzero constant explained');
+ set([1,0,0]);click('graph-pin');const ref=$('graph-reference'),old=ref.getAttribute('d');assert(old&&ref.getAttribute('stroke-dasharray'),'Pinned curve has distinct dashed style');
+ G.setCoefficients([2,0,3],{instant:true,keepView:true});assert(ref.getAttribute('d')===old,'Pinned function immutable across coefficient changes');
+ assert($('graph-comparison-legend').textContent.includes('Before')&&$('graph-comparison-legend').textContent.includes('After'),'Before/After legend');
+ click('graph-unpin');assert(ref.style.display==='none','Clear reference hides pinned curve');
+ set([1,0,0]);click('graph-predict-reveal');assert(coeff().join()==='1,0,0'&&$('graph-predict-feedback').textContent.includes('Choose'),'Prediction required before reveal');
+ $('graph-predict-answer').value='other';click('graph-predict-reveal');await wait(350);assert(coeff()[0]===-1,'Prediction sign activity applies correct graph');
+ assert($('graph-predict-feedback').textContent.includes('Try comparing'),'Wrong prediction gets supportive feedback');
+ assert($('graph-predict-reveal').disabled,'Reveal cannot apply stale activity twice');
+ input('graph-c',2);await wait(350);assert($('graph-predict-answer').value===''&&!$('graph-predict-reveal').disabled,'Input resets old prediction');
+ input('graph-predict-kind','shift');$('graph-predict-answer').value='correct';click('graph-predict-reveal');await wait(350);assert(coeff()[2]===5&&$('graph-predict-feedback').textContent.includes('Correct'),'Vertical-shift prediction and positive feedback');
+ set([1,0,0]);input('graph-predict-kind','width');$('graph-predict-answer').value='correct';click('graph-predict-reveal');await wait(350);assert(coeff()[0]===2,'Width activity changes a');
+ set([0,1,0]);input('graph-predict-kind','width');assert($('graph-predict-answer').options[1].textContent.includes('parabola'),'Linear-to-quadratic activity avoids false width claim');
+ set([1,-2,-1]);const unchanged=coeff().join();
+ for(const kind of ['sign','width','shift']){click('graph-why-'+kind);assert($('graph-why-text').textContent.includes('Example')&&$('graph-teaching-highlight').getAttribute('d').length>20,'Worked '+kind+' example with highlight');assert(coeff().join()===unchanged,'Why '+kind+' preserves user function');}
+ click('graph-why-clear');assert($('graph-teaching-highlight').style.display==='none','Clear worked highlight');
+ click('graph-why-sign');set([1,0,0]);assert($('graph-teaching-highlight').style.display==='none','Immediate edits remove stale teaching highlight');
+ click('graph-draw');await wait(120);p=position();pointer('pointerdown',p.x,p.y);assert(!G.player.playing,'Vertex drag cancels trace animation');pointer('pointerup',p.x,p.y);
+ p=position();pointer('pointerdown',p.x,p.y);input('graph-c',3);const edited=coeff().join();pointer('pointermove',p.x+30,p.y);assert(coeff().join()===edited,'Coefficient edits cancel active drag');
+ click('graph-pin');click('tool-reset');await wait(350);assert(coeff().join()==='1,0,0'&&ref.style.display==='none','Tool reset restores defaults and clears comparison');
+ input('graph-family','sin');assert(handle.style.display==='none'&&$('graph-vertex-reset').disabled,'Custom family disables quadratic vertex controls');
+ click('graph-pin');assert(!$('graph-unpin').disabled,'Current custom primary function can be pinned');input('graph-a',2);await wait(350);assert(ref.style.display!== 'none'&&!/NaN|Infinity/.test(ref.getAttribute('d')),'Custom pinned curve safely retained');
+ input('graph-functions','1/x');click('graph-plot');click('graph-pin');assert((ref.getAttribute('d').match(/M/g)||[]).length>1,'Pinned reference does not bridge a pole');
+ input('graph-family','quadratic');set([1,0,-2]);click('language-toggle');await wait(80);assert($('graph-pin').textContent.includes('বর্তমান')&&$('graph-residual-title').textContent.includes('যাচাই'),'New labels translated into Bengali');
+ click('language-toggle');
+ for(const width of [320,390,768,1280]){this.style.width=width+'px';await wait(90);assert(d.documentElement.scrollWidth<=width+1,'No horizontal page overflow at '+width);}
+ this.style.width='1200px';set([1,0,0]);click('graph-pin');set([1,-2,-2]);click('graph-why-shift');
+ $('report');document.getElementById('report').textContent='PASS '+checks.length+' Graph teaching assertions\n'+checks.join('\n');
+ }catch(e){document.getElementById('report').textContent='FAIL '+e.stack;}
+};
+</script>

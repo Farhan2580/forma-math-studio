@@ -1,0 +1,26 @@
+<!doctype html><meta charset="utf-8"><title>Integration regression</title><pre id="report">RUNNING</pre><iframe src="../index.html" title="Integration checks" style="width:1200px;height:1100px;border:0"></iframe><script>
+document.querySelector('iframe').onload=function(){
+ const w=this.contentWindow,d=w.document,L=w.FormaLabMath,E=w.FormaEngine,checks=[],assert=(v,s)=>{if(!v)throw Error(s);checks.push(s);},run=(s,a=0,b=1)=>L.integrate(E.parse(s),a,b),near=(a,b)=>Math.abs(a-b)<1e-8;
+ const throws=(fn,pattern)=>{try{fn();return false;}catch(e){return pattern.test(e.message);}};
+ try{
+ for(const [s,v] of [['cos(8*pi*x)',0],['cos(16*pi*x)',0],['sin(8*pi*x)^2',.5],['cos(64*pi*x+.17)',0],['sin(16*pi*x)^2',.5],['cos(128*pi*x)',0]]){
+  const r=run(s);assert(near(r.value,v),'Aliasing regression '+s+' = '+v);assert(r.panels>=32&&r.evaluations>5&&r.errorKind==='estimate','Subdivision and estimate metadata '+s);
+ }
+ assert(near(run('sin(8*pi*x)^2',1,0).value,-.5),'Oscillatory reversed bounds');
+ assert(near(run('sin(8*pi*x)^2',.2,.2).value,0),'Equal finite bounds');
+ assert(near(run('x^2',0,2).value,8/3),'Polynomial preserved');assert(near(run('sin(x)',0,Math.PI).value,2),'Smooth trigonometric integral preserved');
+ let reference=0;for(let i=0;i<65536;i++)reference+=Math.cos(8*Math.PI*((i+.5)/65536)**2)/65536;
+ assert(near(run('cos(8*pi*x*x)').value,reference),'Nonlinear phase agrees with independent dense midpoint quadrature');
+ assert(throws(()=>run('cos(1e8*x)'),/depth|subdivision|limit|resolve/i),'Unresolved frequency gives a depth error');
+ assert(throws(()=>run('cos(1e5*x)'),/evaluation limit|work limit/i),'Evaluation work limit is explicit');
+ assert(throws(()=>run('cos(1e13+x)'),/phase.*large|precision/i),'Unresolvable phase magnitude rejected');
+ assert(throws(()=>run('cos(1e308)'),/phase.*large|precision/i),'Huge constant phase terminates without an interval loop');
+ assert(throws(()=>run('1/(x-.13)'),/pole|denominator/i),'Shifted pole still rejected');
+ assert(throws(()=>run('ln(x)'),/defined|domain/i),'Improper logarithm still rejected');
+ d.querySelector('[data-mode=calculus]').click();const choose=d.getElementById('calc-tool');choose.value='integral';choose.dispatchEvent(new w.Event('change',{bubbles:true}));
+ for(const [id,v] of [['calc-function','sin(8*pi*x)^2'],['calc-left',0],['calc-right',1]])d.getElementById(id).value=v;
+ d.getElementById('lab-calculate').click();assert(d.getElementById('lab-result').textContent.includes('0.5'),'Correct integral shown in UI');
+ assert(d.getElementById('lab-result').textContent.includes('not a guaranteed bound')&&!d.getElementById('lab-result').textContent.includes('error ≤'),'Estimated error is never claimed as guarantee');
+ document.getElementById('report').textContent='PASS '+checks.length+' integration assertions\n'+checks.join('\n');
+ }catch(e){document.getElementById('report').textContent='FAIL '+e.stack;}
+};</script>

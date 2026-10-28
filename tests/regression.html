@@ -1,0 +1,86 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Forma regression checks</title>
+<style>iframe{width:360px;height:800px;border:0}</style>
+<pre id="report">RUNNING</pre>
+<iframe src="../index.html" title="Calculator under test"></iframe>
+<script>
+const frame=document.querySelector('iframe');
+frame.onload=async()=>{
+  const w=frame.contentWindow,d=w.document,M=w.FormaMath,checks=[];
+  const assert=(condition,name)=>{if(!condition)throw Error(name);checks.push(name);};
+  const throws=(fn,pattern)=>{try{fn();return false;}catch(e){return pattern.test(e.message);}};
+  const set=(id,value)=>{d.getElementById(id).value=value;};
+  const click=(id)=>d.getElementById(id).click();
+  const mode=(name)=>d.querySelector('[data-mode="'+name+'"]').click();
+  const result=()=>d.getElementById('result').textContent;
+  const wait=(ms)=>new Promise(resolve=>setTimeout(resolve,ms));
+  const step=()=>d.getElementById('step-status').textContent;
+  const pans=()=>[...d.querySelectorAll('.balance-pan>span')].map(el=>el.textContent).join(' | ');
+  const gridFits=()=>{
+    const grid=d.querySelector('.blocks').getBoundingClientRect();
+    const panel=d.querySelector('.visual-panel').getBoundingClientRect();
+    return grid.height<=236&&grid.width<=236&&grid.left>=panel.left&&grid.right<=panel.right;
+  };
+  try{
+    assert(result()==='48','Initial calculation');
+    assert(M.arithmetic(2,3,'+')===5&&M.arithmetic(2,3,'-')===-1&&M.arithmetic(2,3,'/')===2/3,'Arithmetic operations');
+    assert(throws(()=>M.arithmetic(1,0,'/'),/zero/),'Division by zero');
+    assert(throws(()=>M.arithmetic(1,2,'toString'),/valid operation/),'Reject inherited operation names');
+    assert(throws(()=>M.arithmetic(Infinity,2,'+'),/finite/),'Reject non-finite input');
+    assert(throws(()=>M.arithmetic(1e308,1e308,'*'),/finite/),'Reject overflow');
+    for(const [a,b] of [[100,1],[1,100],[12,4]]){
+      set('a',a);set('b',b);click('calculate');
+      assert(d.querySelectorAll('.block').length===a*b&&gridFits(),'Bounded grid '+a+' x '+b);
+    }
+    set('a','');click('calculate');
+    assert(result()==='—'&&d.getElementById('error').textContent.includes('fill'),'Empty input error');
+    set('a','1e100');set('b','1e100');set('op','+');click('calculate');
+    assert(d.documentElement.scrollWidth<=d.documentElement.clientWidth,'Large values fit mobile viewport');
+    mode('percentage');assert(result()==='50','Percentage default');
+    set('p','12.5');click('calculate');
+    assert(result()==='31.25'&&d.querySelectorAll('.block.selected').length===12,'Fractional percentage');
+    set('p','150');click('calculate');assert(result()==='375'&&d.getElementById('lesson-cells').dataset.wholes==='1'&&d.querySelectorAll('.block.selected').length===50,'Percentage above 100 uses multiple-whole representation');
+    mode('algebra');assert(result()==='x = 6','Unique equation solution');
+    assert(step()==='Step 1 of 3'&&pans()==='2x + 6 | 18'&&d.getElementById('previous').disabled,'Original equation and first boundary');
+    click('next');assert(step()==='Step 2 of 3'&&pans()==='2x | 12','Subtract on both sides');
+    assert(d.querySelectorAll('#steps .current-step').length===1&&d.querySelector('#steps li:nth-child(2)').getAttribute('aria-current')==='step','Current explanation highlighted');
+    click('next');assert(pans()==='x | 6'&&d.getElementById('next').disabled,'Division and last boundary');
+    click('previous');assert(step()==='Step 2 of 3','Previous navigates backwards');
+    click('play-pause');assert(d.getElementById('play-pause').textContent==='Pause','Play starts');
+    click('play-pause');await wait(2000);
+    assert(step()==='Step 2 of 3'&&d.getElementById('play-pause').textContent==='Play','Pause stops advancement');
+    click('play-pause');await wait(2000);
+    assert(step()==='Step 3 of 3'&&d.getElementById('play-pause').textContent==='Play'&&!d.getElementById('visual').classList.contains('paused'),'Playback finishes without freezing final animation');
+    click('replay');assert(step()==='Step 1 of 3'&&d.getElementById('play-pause').textContent==='Pause','Replay resets and plays');
+    set('b',8);d.getElementById('b').dispatchEvent(new w.Event('input',{bubbles:true}));
+    await wait(2000);
+    assert(step()==='Step 1 of 3'&&pans()==='2x + 8 | 18'&&result()==='x = 5'&&d.getElementById('play-pause').textContent==='Play','Input change stops timer and resets');
+    set('a','');d.getElementById('a').dispatchEvent(new w.Event('input',{bubbles:true}));
+    assert(result()==='—'&&d.getElementById('play-pause').disabled&&d.getElementById('replay').disabled&&!d.querySelector('.current-step'),'Invalid input clears animation');
+    set('a',-2);set('b',-6);set('c',4);click('calculate');click('next');click('next');
+    assert(pans()==='x | -5'&&result()==='x = -5','Negative coefficients');
+    set('a',0.5);set('b',0);set('c',1.25);click('calculate');click('next');click('next');
+    assert(pans()==='x | 2.5','Fractional coefficients and zero constant');
+    set('c',18);
+    set('a',0);set('b',18);click('calculate');assert(result()==='Every x','Infinite solutions');
+    click('next');assert(pans()==='18 | 18','Infinite solution removes x');
+    click('next');assert(d.querySelector('.visual-note').textContent.includes('Every real x')&&d.querySelector('.algebra-balance').style.getPropertyValue('--tilt')==='0deg','Infinite solution explanation and level balance');
+    set('b',1);click('calculate');assert(result()==='No solution','No solution');
+    click('next');click('next');assert(d.querySelector('.visual-note').textContent.includes('no solution')&&d.querySelector('.algebra-balance').style.getPropertyValue('--tilt')!=='0deg','No solution explanation and tilted balance');
+    assert(d.documentElement.scrollWidth<=d.documentElement.clientWidth,'Algebra controls fit mobile viewport');
+    click('play-pause');
+    mode('geometry');
+    await wait(2000);assert(d.getElementById('algebra-controls').hidden&&!d.querySelector('.balance'),'Switching mode cancels playback');
+    set('radius-slider',10);d.getElementById('radius-slider').dispatchEvent(new w.Event('input'));
+    assert(d.getElementById('radius').value==='10'&&result()===M.format(Math.PI*100),'Slider updates radius and area');
+    set('radius',0);d.getElementById('radius').dispatchEvent(new w.Event('input'));
+    assert(result()==='0'&&d.getElementById('radius-slider').value==='0','Zero radius synchronization');
+    for(const radius of [-1,21]){set('radius',radius);click('calculate');assert(result()==='—','Reject radius '+radius);}
+    mode('basic');set('a',3);set('b',7);
+    d.getElementById('a').dispatchEvent(new w.KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
+    assert(result()==='21','Enter calculates');click('replay');assert(result()==='21','Replay preserves result');
+    document.getElementById('report').textContent='PASS '+checks.length+' checks\n'+checks.join('\n');
+  }catch(e){document.getElementById('report').textContent='FAIL: '+e.message+'\nPassed: '+checks.join('\n');}
+};
+</script>

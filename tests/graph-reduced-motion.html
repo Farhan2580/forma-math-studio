@@ -1,0 +1,36 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Graph reduced motion checks</title>
+<pre id="report">RUNNING</pre>
+<iframe src="../index.html" title="Reduced motion graph test" style="width:360px;height:1000px;border:0"></iframe>
+<script>
+document.querySelector('iframe').onload=()=>{
+  const w=document.querySelector('iframe').contentWindow,d=w.document,$=id=>d.getElementById(id),checks=[];
+  const assert=(ok,name)=>{if(!ok)throw Error(name);checks.push(name);};
+  try{
+    assert(w.matchMedia('(prefers-reduced-motion: reduce)').matches,'Reduced motion emulated in browser');
+    d.querySelector('[data-mode=graph]').click();
+    let frames=0;const original=w.requestAnimationFrame;w.requestAnimationFrame=callback=>{frames++;return original.call(w,callback);};
+    $('graph-a').value=-2;$('graph-a').dispatchEvent(new w.Event('input'));
+    assert(frames===0,'Slider changes render immediately without motion');
+    assert($('graph-equation').textContent.includes('-2')&&$('graph-curve').getTotalLength()>0,'Updated curve remains visible');
+    $('graph-draw').click();
+    assert($('graph-progress').textContent.includes('100%')&&frames===0,'Draw instantly completes');
+    assert($('graph-play').disabled&&$('graph-speed').disabled,'Continuous motion controls disabled');
+    $('graph-replay').click();assert(frames===0&&$('graph-progress').textContent.includes('0%'),'Replay returns to first static/manual step without motion');
+    assert($('graph-motion-note').textContent.includes('Reduced motion'),'Preference explained');
+    assert(d.documentElement.scrollWidth<=d.documentElement.clientWidth,'Reduced motion mobile layout');
+    d.querySelector('[data-mode=calculus]').click();$('calc-tool').value='integral';$('calc-tool').dispatchEvent(new w.Event('change',{bubbles:true}));$('lab-calculate').click();
+    assert($('lab-play').disabled&&$('lab-step-status').textContent.includes('Step 12 of 12'),'Reduced motion shows complete Riemann visualization');
+    $('lab-replay').click();assert($('lab-step-status').textContent.includes('Step 1 of 12'),'Lab replay returns to first manual step without continuous motion');
+    d.querySelector('[data-mode=scientific]').click();assert(!$('scientific').hidden&&d.documentElement.scrollWidth<=d.documentElement.clientWidth,'Scientific keypad supports reduced motion mobile layout');
+    d.querySelector('[data-mode=basic]').click();
+    assert($('lesson-play').disabled&&!$('lesson-next').disabled,'Arithmetic keeps manual steps available with continuous play disabled');
+    $('lesson-next').click();assert(w.FormaLessons.player.position===1,'Arithmetic Next works in reduced motion');
+    $('lesson-replay').click();assert(w.FormaLessons.player.position===0&&!w.FormaLessons.player.playing,'Arithmetic Replay returns to first static step');
+    d.querySelector('[data-mode=percentage]').click();$('p').value='12.5';$('p').dispatchEvent(new w.Event('input',{bubbles:true}));
+    assert(d.querySelector('#lesson-cells .partial').dataset.fill==='0.5'&&frames===0,'Reduced-motion partial percentage is correct without animation frames');
+    document.getElementById('report').textContent='PASS '+checks.length+' checks\n'+checks.join('\n');
+  }catch(e){document.getElementById('report').textContent='FAIL: '+e.message+'\n'+checks.join('\n');}
+};
+</script>

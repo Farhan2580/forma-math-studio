@@ -1,0 +1,59 @@
+<!doctype html><meta charset="utf-8"><title>Geometry teaching checks</title><pre id="report">RUNNING</pre><iframe src="../index.html" style="width:1200px;height:1150px;border:0" title="Geometry teaching"></iframe><script>
+document.querySelector('iframe').onload=async function(){
+ const w=this.contentWindow,d=w.document,$=id=>d.getElementById(id),P=w.FormaLabs.player,L=w.FormaLabMath,checks=[],assert=(v,s)=>{if(!v)throw Error(s);checks.push(s);},near=(a,b)=>Math.abs(a-b)<1e-8;
+ const wait=ms=>new Promise(r=>setTimeout(r,ms)),click=id=>$(id).click(),choose=(id,v)=>{$(id).value=v;$(id).dispatchEvent(new w.Event('change',{bubbles:true}));},input=(id,v)=>{$(id).value=v;$(id).dispatchEvent(new w.Event('input',{bubbles:true}));};
+ const shape=s=>choose('geo-shape',s),pic=()=>d.querySelector('.geometry-lesson-svg'),seek=p=>P.seek(p);
+ const area=node=>{const points=node.getAttribute('points').split(' ').map(s=>s.split(',').map(Number));return Math.abs(points.reduce((s,p,i)=>{const q=points[(i+1)%points.length];return s+p[0]*q[1]-q[0]*p[1];},0))/2;};
+ try{
+ d.querySelector('[data-mode="geometry-lab"]').click();shape('rectangle');
+ const tiny=L.geometry('triangle',{a:1e-100,b:1e-100,c:1e-100}),largeTriangle=L.geometry('triangle',{a:1e100,b:1e100,c:1e100});assert(Math.abs(tiny.area/(Math.sqrt(3)/4*1e-200)-1)<1e-12,'Tiny representable triangle area avoids Heron-product underflow');assert(Math.abs(largeTriangle.area/(Math.sqrt(3)/4*1e200)-1)<1e-12,'Large representable triangle area avoids Heron-product overflow');assert(Number.isFinite(L.geometry('trapezoid',{a:6e153,b:6e153,h:2e154,s:0}).area),'Trapezoid average is formed before multiplying');
+ assert(w.FormaLabs.geometryLesson.data.area===24&&$('lab-result').textContent.includes('24'),'Rectangle formula and final result');
+ seek(0);const rect=pic(),cell=rect.querySelector('.geo-cell'),first=cell.getAttribute('fill-opacity');seek(.5);assert(pic()===rect&&rect.querySelector('.geo-cell')===cell&&cell.getAttribute('fill-opacity')!==first,'Rectangle cells persist and change during a step');
+ assert(rect.querySelectorAll('.geo-cell').length===24&&rect.dataset.literal==='true','Rectangle literal unit squares');
+ seek(1);assert([...rect.querySelectorAll('[data-row="0"]')].every(n=>+n.getAttribute('fill-opacity')>.7),'First row fills before other rows');
+ seek(2);assert([...rect.querySelectorAll('.geo-cell')].every(n=>+n.getAttribute('fill-opacity')>.7),'All rows fill at the area stage');
+ input('geo-w',2.5);assert(w.FormaLabs.geometryLesson.data.area===10&&pic().querySelectorAll('.geo-cell').length===12,'Fractional width keeps partial unit cells');
+ input('geo-w',100000);assert(pic().dataset.literal==='false'&&pic().querySelectorAll('.geo-cell').length===96,'Large rectangle uses bounded grouped representation');
+ assert($('lab-visual').textContent.includes('not unit squares'),'Grouped grid is explicitly disclosed');
+ for(const s of ['triangle','trapezoid']){
+  shape(s);seek(0);const original=pic().querySelector('.geo-original'),copy=pic().querySelector('.geo-copy');assert(near(area(original),area(copy)),s+' copies have identical area');
+  const pts=copy.getAttribute('points');seek(1.5);assert(copy.getAttribute('points')===pts&&copy.getAttribute('transform').includes('rotate(90)'),'Rigid '+s+' intermediate preserves vertices');
+  assert(+pic().dataset.copyAngle===90,s+' intermediate half-turn progress');seek(2);assert(+pic().dataset.copyAngle===180,s+' final half-turn');
+  const a=w.FormaLabs.geometryLesson.data.area;assert(near(+pic().dataset.combinedArea,2*a),s+' paired area equals twice original');
+  assert($('lab-result').textContent.includes(String(a)),s+' final result agrees with derivation');
+  if(s==='triangle'){
+   input('geo-a',4);input('geo-b',6);input('geo-c',3);seek(2);assert(!/NaN|Infinity/.test($('lab-visual').innerHTML),'Obtuse triangle has finite derived altitude/diagram');
+  }else{input('geo-s',-20);seek(2);assert(w.FormaLabs.geometryLesson.data.area===18,'Trapezoid area independent of horizontal offset');}
+ }
+ shape('parallelogram');seek(1);const cut=pic().querySelector('.geo-copy'),points=cut.getAttribute('points');seek(1.5);assert(+pic().dataset.cutTranslation===87.5&&cut.getAttribute('points')===points,'Cut piece translates rigidly midway');
+ seek(2);assert(+pic().dataset.cutTranslation===175&&+pic().dataset.totalArea===24,'Cut-and-move preserves final parallelogram area');
+ input('geo-a',1);input('geo-b',20);assert($('lab-visual').textContent.includes('equal-height bands'),'Large shear uses an honest representative band model');
+ input('geo-b',4);assert(!/NaN|Infinity/.test($('lab-visual').innerHTML),'Zero shear remains a valid rectangle');
+ shape('circle');seek(2);assert(pic().querySelectorAll('[data-sector]').length===16,'Circle consists of 16 real arc sectors');
+ const sector=pic().querySelector('[data-sector]'),path=sector.getAttribute('d'),transform=sector.getAttribute('transform');seek(1.5);assert(sector.getAttribute('d')===path&&sector.getAttribute('transform')!==transform,'Intermediate sector motion preserves exact arc geometry');
+ seek(3);const approximate=+pic().dataset.approxArea,exact=+pic().dataset.exactArea;assert(approximate<exact&&near(exact,25*Math.PI),'Circle approximation is separated from true πr²');
+ input('geo-sectors',64);seek(3);assert(pic().querySelectorAll('[data-sector]').length===64,'Sector refinement control updates actual sectors');
+ assert(+pic().dataset.approxArea>approximate&&+pic().dataset.approxArea<exact,'More sectors improves approximation from below');
+ assert($('lab-visual').textContent.includes('not the exact union'),'Scalloped boundary is not falsely called exact rectangle');
+ input('geo-r',5e153);seek(3);assert(Number.isFinite(+pic().dataset.approxArea)&&!$('lab-visual').innerHTML.includes('Infinity'),'Large circle sector approximation avoids intermediate overflow');
+ for(const s of ['cube','cuboid']){shape(s);seek(2);const data=w.FormaLabs.geometryLesson.data;assert(near(+pic().dataset.baseArea* +pic().dataset.heightSum,data.volume),s+' layer sum equals volume');assert($('lab-result').textContent.includes(String(data.volume)),s+' final volume matches result');assert(pic().querySelectorAll('.geo-layer').length===4,s+' actual unit-height layers');}
+ input('geo-h',3.5);seek(2);assert(pic().querySelector('.geo-layer:last-of-type')?.dataset.layerHeight==='.5'||[...pic().querySelectorAll('.geo-layer')].at(-1).dataset.layerHeight==='0.5','Fractional final layer is accurate');
+ input('geo-h',100000);assert(pic().querySelectorAll('.geo-layer').length===8&&$('lab-visual').textContent.includes('not 8 unit layers'),'Large height has bounded labeled slabs');
+ for(const s of ['pythagorean']){shape(s);assert(!w.FormaLabs.geometryLesson&&$('lab-result').textContent.includes('Detailed transformation is not available'),'Honest static-only disclosure: '+s);}
+ shape('triangle');input('geo-a',20);assert($('lab-error').textContent&&P.count===0&&!pic(),'Invalid triangle cancels lesson and clears stale diagram');assert($('geo-a').value==='20','Invalid dimensions preserved');
+ shape('rectangle');input('geo-w',-1);assert($('lab-error').textContent&&P.count===0,'Negative dimensions rejected');input('geo-w',0);assert($('lab-error').textContent,'Zero dimensions rejected');input('geo-w',6);
+ $('geo-w').dispatchEvent(new w.KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));assert(P.count===4&&!$('lab-error').textContent,'Keyboard Enter recalculates valid lesson');
+ seek(1.5);assert(d.querySelector('#lab-steps .current-step')=== $('lab-steps').children[1],'Current step highlighted during transition');
+ assert(d.querySelector('.lab-player .step-detail').textContent.includes('Why'),'What/why/change description present');
+ if(!w.matchMedia('(prefers-reduced-motion: reduce)').matches){seek(1);click('lab-play');await wait(180);click('lab-play');const paused=P.position,markup=$('lab-visual').innerHTML;await wait(180);assert(P.position===paused&&$('lab-visual').innerHTML===markup,'Pause freezes exact intermediate geometry');assert(paused>1&&paused<2,'Playback renders continuous intermediate states');input('lab-speed',2);assert(P.speed===2,'Speed control updates player');}
+ else{assert($('lab-play').disabled,'Reduced motion disables continuous play');click('lab-replay');assert(P.position===0,'Reduced motion Replay retains first manual step');}
+ click('lab-next');assert(Number.isInteger(P.position),'Next moves to exact step');click('lab-prev');assert(Number.isInteger(P.position),'Previous moves to exact step');click('lab-replay');assert(P.position===0,'Replay returns to same input first step');
+ input('geo-w',7);assert(!P.playing&&P.position===(w.matchMedia('(prefers-reduced-motion: reduce)').matches?3:0),'Input cancels playback and rebuilds correct lesson');
+ click('lab-play');d.querySelector('[data-mode="statistics"]').click();assert(!P.playing,'Tool change cancels playback');
+ d.querySelector('[data-mode="geometry-lab"]').click();shape('circle');click('language-toggle');await wait(10);assert($('lab-steps').textContent.includes('Sector')&&d.querySelector('.lab-player .step-detail').textContent.includes('কেন করছি'),'Bengali steps and teaching descriptions');assert($('geo-sectors-label').textContent.includes('জোড়'),'Sector control translated');
+ click('language-toggle');
+ for(const width of [320,390,768,1280]){this.style.width=width+'px';await wait(60);assert(d.documentElement.scrollWidth<=width+1,'No page overflow at '+width);}
+ this.style.width='1200px';shape('triangle');seek(1.5);P.pause();
+ document.getElementById('report').textContent='PASS '+checks.length+' Geometry teaching assertions\n'+checks.join('\n');
+ }catch(e){document.getElementById('report').textContent='FAIL '+e.stack;}
+};</script>

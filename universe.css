@@ -1,0 +1,20 @@
+﻿/* A sculptural gallery above a deliberately flat, readable mathematical bench. */
+.studio-welcome-panel{min-height:310px;border-radius:8px 8px 40px 8px;background:var(--hero-face)}
+.welcome-art{background:radial-gradient(ellipse at 50% 65%,#66dac52b,transparent 65%)}
+.welcome-copy h2{font-family:Georgia,serif;font-weight:400;letter-spacing:-.045em;font-size:clamp(34px,3.8vw,55px)}
+.welcome-copy h2 em{display:block}
+.topic-deck{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.topic-card{display:grid;grid-template-columns:1fr;gap:0;padding:0 0 13px;overflow:hidden;border-radius:10px;transform:none;text-align:left;align-content:start}
+.topic-card svg{width:100%;height:126px;filter:none;background:radial-gradient(ellipse at 50% 45%,#5db4ba20,transparent 72%)}
+.topic-card>span{padding:0 15px}.topic-card strong{font-size:15px}.topic-card small{font-size:12px;display:block;line-height:1.5;min-height:18px}
+.topic-card>span:last-child{display:block;font-size:11px;letter-spacing:.04em;margin-top:11px;color:var(--green)}
+.dimensional-studio :is(.visual-panel,.lab-output,.graph-canvas){background-color:var(--stage,var(--surface));background-image:linear-gradient(#5c99a00a 1px,transparent 1px),linear-gradient(90deg,#5c99a00a 1px,transparent 1px);background-size:26px 26px;border-top:3px solid var(--cyan)}
+.dimensional-studio :is(.lab-controls,.controls){border-top:3px solid var(--green)}
+#solid-viewport{background-image:radial-gradient(ellipse at 50% 75%,#5cbba522,transparent 65%);height:clamp(330px,36vw,500px)}
+.universe-challenge{border:1px solid var(--line);border-left:3px solid var(--violet);padding:12px;margin-block:14px;background:var(--surface);border-radius:8px}.universe-challenge summary{cursor:pointer;min-height:44px;align-content:center;color:var(--ink)}.universe-challenge p,.universe-challenge output{font-size:14px;line-height:1.6}.universe-challenge output{display:block;color:var(--green)}.universe-challenge button{min-height:44px;padding:8px;margin:10px 6px 0 0;color:var(--ink);background:var(--soft);border:1px solid var(--line);border-radius:6px}
+@media(hover:hover) and (pointer:fine){.topic-card:hover{transform:translateY(-4px)}.studio-motion-off .topic-card:hover{transform:none}}
+@media(max-width:1100px){.topic-card svg{height:110px}.topic-card small{font-size:11px}}
+@media(max-width:600px){.studio-welcome-panel{grid-template-columns:1fr;min-height:0}.welcome-copy{padding:22px 20px 4px}.welcome-copy h2{font-size:34px;max-width:320px}.welcome-copy>p:not(.welcome-kicker){max-width:35ch;font-size:13px}.welcome-art{height:195px;margin:0}.welcome-caption{top:8px;right:15px}#welcome-scene{inset:0 0 45px}.welcome-scene-controls{left:0;right:0;width:auto;bottom:6px;justify-content:center}.topic-deck{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.topic-card{display:grid;text-align:left;padding:0 0 12px;min-height:0;gap:0}.topic-card svg{width:100%;height:112px}.topic-card>span{padding-inline:12px}.topic-card strong{font-size:14px;overflow-wrap:anywhere}.topic-card small{display:block;font-size:11px;min-height:33px}.topic-card>span:last-child{display:block}.welcome-actions .primary{font-size:12px}#solid-viewport{height:330px}}
+@media(prefers-reduced-motion:reduce){.topic-card:hover{transform:none}}
+/* Keep the whole stage inspectable on a 768px-tall laptop. */
+@media(min-width:601px){#solid-viewport{height:clamp(300px,42vh,460px)}}

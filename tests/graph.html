@@ -1,0 +1,85 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Graph Explorer browser checks</title>
+<style>iframe{width:1200px;height:1100px;border:0}</style>
+<pre id="report">RUNNING</pre>
+<iframe src="../index.html" title="Graph Explorer test"></iframe>
+<script>
+const frame=document.querySelector('iframe');
+frame.onload=async()=>{
+  const w=frame.contentWindow,d=w.document,M=w.FormaMath,checks=[];
+  const $=id=>d.getElementById(id),assert=(ok,name)=>{if(!ok)throw Error(name);checks.push(name);};
+  const near=(a,b)=>Math.abs(a-b)<1e-8;
+  const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+  const click=id=>$(id).click();
+  const input=(id,n)=>{$(id).value=n;$(id).dispatchEvent(new w.Event('input',{bubbles:true}));};
+  const coeff=async(a,b,c)=>{input('graph-a',a);input('graph-b',b);input('graph-c',c);await wait(400);};
+  const mode=name=>d.querySelector('[data-mode="'+name+'"]').click();
+  const point=()=>[$('graph-point').getAttribute('cx'),$('graph-point').getAttribute('cy')].join(',');
+  const progress=()=>Number($('graph-progress').textContent.match(/\d+/)?.[0]);
+  try{
+    let info=M.quadratic(1,-3,2);
+    assert(info.kind==='quadratic'&&near(info.vertex.x,1.5)&&near(info.vertex.y,-.25)&&info.roots.length===2&&near(info.roots[0],1)&&near(info.roots[1],2),'Quadratic vertex and two roots');
+    info=M.quadratic(1,2,1);assert(info.roots.length===1&&info.roots[0]===-1,'Repeated root');
+    assert(M.quadratic(1,0,1).roots.length===0,'No real roots');
+    info=M.quadratic(-1,0,4);assert(info.vertex.y===4&&info.roots[0]===-2&&info.roots[1]===2,'Downward quadratic');
+    assert(M.quadratic(0,2,-6).roots[0]===3&&M.quadratic(0,2,-6).vertex===null,'Linear degeneration');
+    assert(M.quadratic(0,0,4).kind==='constant'&&M.quadratic(0,0,4).roots.length===0,'Nonzero constant');
+    assert(M.quadratic(0,0,0).allRoots,'Zero function has every x as root');
+    info=M.quadratic(.5,-1,-1.5);assert(near(info.roots[0],-1)&&near(info.roots[1],3),'Fractional coefficients');
+    info=M.quadratic(1e-200,0,-1e-200);assert(near(info.roots[0],-1)&&near(info.roots[1],1),'Tiny coefficients avoid discriminant underflow');
+    info=M.quadratic(1,1e8,1);assert(Math.abs(info.roots[1]+1e-8)<1e-20,'Root calculation avoids cancellation');
+    mode('graph');await wait(500);
+    assert(!$('graph-explorer').hidden&&d.querySelector('.workspace').hidden&&d.querySelector('.explanation').hidden,'Graph tab is isolated');
+    assert($('graph-a').value==='1'&&$('graph-b').value==='0'&&$('graph-c').value==='0','Default coefficients');
+    assert(d.querySelectorAll('#graph-grid line').length===19&&$('graph-origin').textContent==='O','Grid tick pool and origin');
+    assert($('graph-features').textContent.includes('Vertex (0, 0)')&&$('graph-features').textContent.includes('Real roots: 0'),'Default vertex and root annotations');
+    const path=$('graph-curve'),svg=$('graph-svg'),oldPath=path.getAttribute('d');
+    input('graph-a-slider',2);await wait(400);
+    assert(path.getAttribute('d')!==oldPath,'Changing positive a changes visible curve shape with auto scale');
+    input('graph-a-slider',1);await wait(400);
+    input('graph-a-slider',-1);await wait(100);
+    const middlePath=path.getAttribute('d');await wait(400);
+    assert($('graph-a').value==='-1'&&path===$('graph-curve')&&svg===$('graph-svg'),'Slider synchronization and persistent SVG nodes');
+    assert(middlePath!==oldPath&&middlePath!==path.getAttribute('d'),'Curve morph interpolates across animation frames');
+    const pathNumbers=path.getAttribute('d').match(/-?\d+(?:\.\d+)?/g).map(Number);
+    assert(pathNumbers[1]>pathNumbers[Math.floor(pathNumbers.length/4)*2+1],'Negative a opens downward');
+    await coeff(1,-3,2);
+    assert($('graph-b-slider').value==='-3'&&$('graph-features').textContent.includes('1, 2'),'Number synchronization and root readout');
+    assert([...d.querySelectorAll('.graph-root')].every(el=>el.style.display!== 'none'),'Two roots marked on axis');
+    input('graph-speed',3);assert($('graph-speed-value').textContent==='3×','Speed control readout');
+    click('graph-draw');const start=point(),startLength=path.getTotalLength();
+    assert(progress()===0&&$('graph-play').textContent==='Pause'&&startLength<.01,'Draw begins with no curve ahead of point');
+    await wait(650);const during=progress(),moving=point();
+    assert(during>10&&during<80&&moving!==start,'Point moves while drawing');
+    const commands=path.getAttribute('d').match(/-?\d+(?:\.\d+)?/g).map(Number);
+    assert(Math.abs(commands[commands.length-2]-Number($('graph-point').getAttribute('cx')))<.001&&Math.abs(commands[commands.length-1]-Number($('graph-point').getAttribute('cy')))<.001,'Curve ends exactly at moving point');
+    assert($('graph-guides').getAttribute('d').includes('V')&&$('graph-coordinates').textContent.includes('('),'Dashed axis guides and live coordinates');
+    click('graph-play');const paused=point();await wait(350);
+    assert(point()===paused&&$('graph-play').textContent==='Play','Pause freezes point');
+    click('graph-play');await wait(250);assert(point()!==paused,'Play resumes from paused point');
+    click('graph-replay');assert(progress()===0&&point()===start,'Replay restarts at left edge');
+    input('graph-speed',.25);await wait(350);assert(progress()<8,'Slow speed changes timing');
+    input('graph-c',3);await wait(400);assert(progress()===100&&$('graph-play').textContent==='Play','Coefficient edit stops drawing and morphs full preview');
+    await coeff(0,2,-6);assert($('graph-features').textContent.includes('Linear')&&$('graph-features').textContent.includes('3'),'Linear visualization');
+    await coeff(0,0,4);assert($('graph-features').textContent.includes('Constant')&&$('graph-features').textContent.includes('No real roots'),'Constant visualization');
+    await coeff(0,0,0);assert($('graph-features').textContent.includes('Every x'),'Zero function visualization');
+    await coeff(1,0,1);assert($('graph-features').textContent.includes('No real roots'),'No real roots visualization');
+    input('graph-a','');assert($('graph-play').disabled&&$('graph-draw').disabled&&$('graph-error').textContent.length>0,'Blank input safely stops animation');
+    input('graph-a',21);assert($('graph-draw').disabled,'Out-of-range input rejected');
+    await coeff(1,0,0);assert(!$('graph-draw').disabled&&!$('graph-error').textContent,'Valid input recovers');
+    for(const width of [320,360,760,1200]){
+      frame.style.width=width+'px';await wait(150);
+      const box=$('graph-svg').getBoundingClientRect();
+      assert(d.documentElement.scrollWidth<=d.documentElement.clientWidth&&box.width>200&&box.height>=300,'Graph layout fits '+width+'px');
+    }
+    click('graph-draw');mode('basic');await wait(150);
+    assert($('graph-explorer').hidden&&!d.querySelector('.workspace').hidden&&$('result').textContent==='48','Arithmetic preserved after leaving graph');
+    mode('percentage');assert($('result').textContent==='50','Percentage preserved');
+    mode('algebra');assert($('result').textContent==='x = 6','Algebra preserved');
+    mode('geometry');assert($('result').textContent===M.format(Math.PI*25),'Geometry preserved');
+    mode('graph');assert($('graph-play').textContent==='Play','Leaving graph cancels drawing');
+    document.getElementById('report').textContent='PASS '+checks.length+' checks\n'+checks.join('\n');
+  }catch(e){document.getElementById('report').textContent='FAIL: '+e.message+'\nPassed '+checks.length+'\n'+checks.join('\n');}
+};
+</script>

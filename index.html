@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0c1729"><title>Forma — 3D Math Studio</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="workbench.css"><link rel="stylesheet" href="studio.css"><link rel="stylesheet" href="dimensional.css"><link rel="stylesheet" href="universe.css"></head>
+<body>
+<header><a class="brand" href="#">f<span>o</span>rma<span class="dot">.</span></a><span class="tag">A little curiosity. A lot of possibility.</span><div class="appearance-controls"><button id="theme-toggle" type="button" aria-pressed="false">Dark theme</button><button id="language-toggle" type="button">বাংলা</button></div><span class="version">INTERACTIVE MATH LAB · 01</span></header>
+<main><section class="intro"><div class="eyebrow"><span></span> MAKE SENSE OF THE NUMBERS</div><h1>Don't just calculate.<br><em>See it happen.</em></h1><p>Turn numbers into something you can see. Explore, change a value, and watch the math come alive.</p></section>
+<nav aria-label="Calculation modes"><button data-mode="scientific">⌘ <span>Scientific</span></button><button data-mode="basic" class="active">01 <span>Arithmetic</span></button><button data-mode="percentage">02 <span>Percentage</span></button><button data-mode="algebra">03 <span>Algebra</span></button><button data-mode="geometry">04 <span>Geometry</span></button><button data-mode="graph">05 <span>Graph Explorer</span></button><button data-mode="algebra-lab">06 <span>Algebra Lab</span></button><button data-mode="geometry-lab">07 <span>Geometry Lab</span></button><button data-mode="calculus">08 <span>Calculus</span></button><button data-mode="statistics">09 <span>Statistics</span></button><button data-mode="matrix">10 <span>Matrix &amp; Vector</span></button><button data-mode="tools">11 <span>Number &amp; Units</span></button></nav>
+<div class="workspace"><section class="controls"><div class="panel-top"><span id="category">THE EVERYDAY ESSENTIALS</span><span>↗</span></div><h2 id="title">Small numbers.<br>Big understanding.</h2><p id="description">Choose two numbers and an operation. Follow the result, one step at a time.</p><div id="fields"></div><div id="input-math-preview" class="math-preview" aria-label="Formatted expression"></div><button id="calculate" class="primary">Visualize calculation <span>↗</span></button><p id="error" role="alert"></p><div class="hint">✧ <span id="hint">Try multiplying 12 by 4.</span></div></section>
+<section class="visual-panel"><div class="panel-top"><span>LIVE CANVAS</span><span class="live"><i></i> Ready to explore</span></div><div id="visual" aria-label="Calculation visualization"></div><div class="answer"><span>YOUR RESULT</span><strong id="result" aria-live="polite">48</strong><small id="formula">12 × 4 = 48</small></div></section></div>
+<section class="explanation"><div><div class="eyebrow">BEHIND THE ANSWER</div><h2>The how, not just the what.</h2></div><ol id="steps" aria-live="polite"></ol><div class="animation-controls" role="group" aria-label="Animation controls"><div id="algebra-controls" hidden><button id="previous" type="button" aria-label="Previous solution step">← Previous</button><button id="play-pause" type="button" aria-pressed="false">Play</button><button id="next" type="button" aria-label="Next solution step">Next →</button><label for="algebra-speed">Speed</label><input id="algebra-speed" type="range" min="0.25" max="3" step="0.25" value="1"><output id="algebra-speed-value">1×</output><span id="step-status" role="status" aria-live="polite"></span></div><button id="replay" type="button" class="replay">↻ Replay animation</button></div></section>
+<section id="graph-explorer" hidden aria-label="Graph Explorer">
+  <div class="graph-heading"><div><div class="eyebrow">FOLLOW THE SHAPE OF A FUNCTION</div><h2>One equation. A world of curves.</h2><p>Start with <strong>y = ax² + bx + c</strong>, choose another function family, or compare your own expressions.</p></div><span class="graph-badge">GRAPH EXPLORER · 01</span></div>
+  <div class="graph-workspace">
+    <section class="graph-controls" aria-label="Graph coefficients and animation">
+      <div class="panel-top">SHAPE YOUR FUNCTION</div>
+      <div id="graph-coefficients"></div>
+      <p id="graph-error" role="alert"></p>
+      <button id="graph-draw" class="primary" type="button">Draw curve <span>↗</span></button>
+      <div class="graph-playback"><button id="graph-play" type="button" aria-pressed="false">Play</button><button id="graph-replay" type="button">↻ Replay</button></div>
+      <label for="graph-speed">Animation speed <output id="graph-speed-value" for="graph-speed">1×</output></label>
+      <input id="graph-speed" type="range" min="0.25" max="3" value="1" step="0.25">
+      <p id="graph-motion-note" class="graph-help">Draw from left to right. Pause to inspect any point.</p>
+      <p class="graph-help">Coefficients: −20 to 20. x: −6 to 6. The y-axis scale adjusts to keep the curve visible.</p>
+    </section>
+    <section class="graph-canvas" aria-label="Interactive function plot">
+      <div class="panel-top"><span>LIVE COORDINATE PLANE</span><span class="live"><i></i> <span id="graph-status" role="status">Ready to explore</span></span></div>
+      <p id="graph-equation" class="graph-equation"></p>
+      <svg id="graph-svg" role="group" aria-labelledby="graph-svg-title graph-svg-desc">
+        <title id="graph-svg-title">Quadratic function graph</title><desc id="graph-svg-desc">A coordinate plane with a function curve, its vertex, real roots, and a moving point.</desc>
+        <defs><clipPath id="graph-clip"><rect id="graph-clip-rect"/></clipPath></defs>
+        <g id="graph-grid"></g><g id="graph-axes"></g><g id="graph-ticks"></g>
+        <g clip-path="url(#graph-clip)">
+          <path id="graph-curve" fill="none"/>
+          <path id="graph-guides" fill="none"/>
+          <g id="graph-markers"></g>
+          <circle id="graph-point" r="6"/>
+        </g>
+        <g id="graph-marker-labels"></g><text id="graph-origin">O</text>
+      </svg>
+      <div class="graph-readout"><span>TRACING POINT <output id="graph-coordinates"></output></span><span id="graph-progress">Preview · full curve</span></div>
+      <p id="graph-features" class="graph-features" aria-live="polite"></p>
+    </section>
+  </div>
+  <section class="graph-explain" aria-label="Understanding the coefficients">
+    <div><span class="eyebrow">BEHIND THE CURVE</span><h2>What changes the shape?</h2><p class="lab-note">These explanations describe ax² + bx + c. Other families use a, b, c exactly as shown in their expressions.</p></div>
+    <p lang="bn"><strong>a — বাঁকের ধরন</strong> a ধনাত্মক হলে ওপরের দিকে, ঋণাত্মক হলে নিচের দিকে খোলে। |a| বাড়লে বাঁক সরু হয়। a = 0 হলে সরলরেখা হয়।</p>
+    <p lang="bn"><strong>b — ঢাল ও শীর্ষের অবস্থান</strong> b বদলালে ঢাল ও শীর্ষবিন্দুর অবস্থান বদলায়। a ≠ 0 হলে শীর্ষের x = −b / (2a)।</p>
+    <p lang="bn"><strong>c — ওপর–নিচে সরানো</strong> c বাড়ালে গ্রাফ ওপরে, কমালে নিচে সরে। y-axis-কে গ্রাফ (0, c) বিন্দুতে ছেদ করে। a ও b দুটোই 0 হলে y = c একটি সমান্তরাল রেখা।</p>
+  </section>
+</section>
+<footer><span>forma. <small>Built for your curious side.</small></span><span>Move a number. Find a new perspective.</span></footer></main>
+<script src="math.js"></script><script src="engine.js"></script><script src="notation.js"></script><script src="animation.js"></script><script src="form-feedback.js"></script><script src="lessons.js"></script><script src="graph.js"></script><script src="graph-teaching.js"></script><script src="scientific.js"></script><script src="lab-math.js"></script><script src="geometry-lessons.js"></script><script src="fractions.js"></script><script src="trigonometry.js"></script><script src="statistics-lessons.js"></script><script src="coordinates.js"></script><script src="sequences.js"></script><script src="probability.js"></script><script src="complex-plane.js"></script><script src="labs.js"></script><script src="appearance.js"></script><script src="app.js"></script><script src="workbench.js"></script><script src="verification.js"></script><script src="workspace-catalog.js"></script><script src="workspace-plus.js"></script><script src="solid-lessons.js"></script><script src="geometry-3d.js"></script><script src="studio.js"></script><script src="dimensional.js"></script><script src="universe.js"></script></body></html>

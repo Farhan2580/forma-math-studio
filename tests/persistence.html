@@ -1,0 +1,23 @@
+<!doctype html><meta charset="utf-8"><title>Forma history and preferences persistence</title>
+<pre id="report">RUNNING</pre><iframe title="Persistence checks" src="../index.html" style="width:1000px;height:1000px"></iframe>
+<script>
+let phase=0;const checks=[],frame=document.querySelector('iframe');
+frame.onload=()=>{
+ const w=frame.contentWindow,d=w.document,$=id=>d.getElementById(id),assert=(ok,label)=>{if(!ok)throw Error(label);checks.push(label);},evaluate=s=>{$('sci-expression').value=s;d.querySelector('[data-action=equals]').click();return $('sci-result').textContent;};
+ try{
+  d.querySelector('[data-mode=scientific]').click();
+  if(phase===0){
+    $('sci-history-clear').click();evaluate('9');evaluate('Ans+1');evaluate('100');$('sci-rad').click();evaluate('sin(pi/2)');
+    if(d.documentElement.dataset.theme!=='dark')$('theme-toggle').click();$('language-toggle').click();phase=1;w.location.reload();return;
+  }
+  assert($('sci-history').children.length===4,'History persists across a real page reload');
+  assert(d.documentElement.dataset.theme==='dark'&&d.documentElement.lang==='bn','Theme and language persist');
+  [...$('sci-history').querySelectorAll('button')].find(button=>button.textContent.startsWith('Ans+1')).click();
+  assert(evaluate($('sci-expression').value)==='10','History preserves historical Ans after reload');
+  [...$('sci-history').querySelectorAll('button')].find(button=>button.textContent.startsWith('sin(pi/2)')).click();
+  assert($('sci-rad').getAttribute('aria-pressed')==='true'&&evaluate($('sci-expression').value)==='1','History restores its angle mode');
+  $('sci-history-clear').click();assert(JSON.parse(w.localStorage.getItem('forma.scientific.history.v1')).length===0,'Clear history removes persisted entries');
+  $('theme-toggle').click();$('language-toggle').click();document.getElementById('report').textContent='PASS '+checks.length+' checks\n'+checks.join('\n');
+ }catch(e){document.getElementById('report').textContent='FAIL: '+e.message+'\n'+checks.join('\n');}
+};
+</script>
