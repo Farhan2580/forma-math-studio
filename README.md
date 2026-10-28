@@ -1,4 +1,48 @@
-<<<<<<< HEAD
+<div align="center">
+
+  <h1>✨ FORMA</h1>
+  <h3>Interactive Math Studio</h3>
+
+  <a href="https://farhan2580.github.io/forma-math-studio/">
+    <img
+      src="https://readme-typing-svg.demolab.com/?font=Fira+Code&size=22&duration=3000&pause=1200&color=10B981&center=true&vCenter=true&width=600&height=60&lines=Make+sense+of+the+numbers.;Explore.+Calculate.+Visualize.;A+little+curiosity.+A+lot+of+possibility."
+      alt="Explore, calculate, and visualize mathematics with Forma"
+      width="600"
+    />
+  </a>
+
+  <p>
+    Explore mathematics through interactive calculations,<br />
+    visual explanations, and animated learning experiences.
+  </p>
+
+  <p>
+    <a href="https://farhan2580.github.io/forma-math-studio/">
+      <img
+        src="https://img.shields.io/badge/OPEN_WEBSITE-059669?style=for-the-badge&logo=googlechrome&logoColor=white"
+        alt="Open Forma website"
+      />
+    </a>
+    <a href="https://github.com/Farhan2580/forma-math-studio/issues">
+      <img
+        src="https://img.shields.io/badge/REPORT_AN_ISSUE-334155?style=for-the-badge&logo=github&logoColor=white"
+        alt="Report an issue"
+      />
+    </a>
+  </p>
+
+  <p><strong>Don't just calculate. See it happen.</strong></p>
+
+  <p>
+    Created by
+    <a href="https://github.com/Farhan2580">Farhan Labib</a>
+  </p>
+
+</div>
+
+---
+
+
 # Forma — Scientific Calculator & Visual Math Lab
 
 একটি সম্পূর্ণ স্থানীয় HTML/CSS/JavaScript app। কোনো dependency, backend, API key, account বা internet connection লাগে না। আগের Arithmetic, Percentage, Algebra balance animation এবং Circle calculator রাখা হয়েছে। বিভাগগুলো desktop sidebar থেকে খুলুন; mobile-এ Tools button drawer খুলবে।
